@@ -7,12 +7,12 @@ import (
 	"reflect"
 )
 
-// WorkflowCtx is the AWS Lambda Workflow context.
-type WorkflowCtx interface {
+// Context is the AWS Lambda Workflow context.
+type Context interface {
 	GetLambdaContext() context.Context
 	GetLambdaEvent(out interface{}) error
-	SetResponse(interface{}) WorkflowCtx
-	SetResponseStatusCode(int) WorkflowCtx
+	SetResponse(interface{}) Context
+	SetResponseStatusCode(int) Context
 }
 
 type lambdaCtx struct {
@@ -22,12 +22,12 @@ type lambdaCtx struct {
 	responseStatusCode int
 }
 
-func (c *lambdaCtx) SetResponse(res interface{}) WorkflowCtx {
+func (c *lambdaCtx) SetResponse(res interface{}) Context {
 	c.response = res
 	return c
 }
 
-func (c *lambdaCtx) SetResponseStatusCode(code int) WorkflowCtx {
+func (c *lambdaCtx) SetResponseStatusCode(code int) Context {
 	c.responseStatusCode = code
 	return c
 }
