@@ -11,13 +11,18 @@ import (
 type Context interface {
 	GetLambdaContext() context.Context
 	GetLambdaEvent(out interface{}) error
+	GetInjector() Injector
 	SetResponse(interface{}) Context
 	SetResponseStatusCode(int) Context
 }
 
 type lambdaCtx struct {
-	lambdaContext      context.Context
-	lambdaEvent        interface{}
+	// Set by the builder
+	lambdaContext context.Context
+	lambdaEvent   interface{}
+	injector      Injector
+
+	// Set by the user
 	response           interface{}
 	responseStatusCode int
 }
@@ -60,4 +65,8 @@ func (c *lambdaCtx) GetLambdaEvent(out interface{}) (err error) {
 
 	outValue.Elem().Set(reflect.ValueOf(c.lambdaEvent))
 	return err
+}
+
+func (c *lambdaCtx) GetInjector() Injector {
+	return c.injector
 }

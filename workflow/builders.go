@@ -14,6 +14,7 @@ import (
 
 // APIGWProxyWorkflowBuilder AWS Lambda handler workflow builder.
 type APIGWProxyWorkflowBuilder struct {
+	injector     Injector
 	httpHandlers map[string]interface{}
 }
 
@@ -21,6 +22,12 @@ type APIGWProxyWorkflowBuilder struct {
 func (b *APIGWProxyWorkflowBuilder) AddGetHandler(path string, handler interface{}) *APIGWProxyWorkflowBuilder {
 	// TODO: Validate handler func.
 	b.httpHandlers[b.getHandlerKey(http.MethodGet, path)] = handler
+	return b
+}
+
+// SetInjector sets the injector which will be available in the workflow context.
+func (b *APIGWProxyWorkflowBuilder) SetInjector(injector Injector) *APIGWProxyWorkflowBuilder {
+	b.injector = injector
 	return b
 }
 
@@ -38,7 +45,6 @@ func (b *APIGWProxyWorkflowBuilder) Build() APIGatewayProxyWorkflow {
 		}
 
 		h := b.httpHandlers[b.getHandlerKey(evt.HTTPMethod, evt.Path)]
-
 		hType := reflect.TypeOf(h)
 		req := reflect.New(hType.In(1))
 		err = json.Unmarshal(reqBytes, req.Interface())
@@ -46,7 +52,7 @@ func (b *APIGWProxyWorkflowBuilder) Build() APIGatewayProxyWorkflow {
 			return nil, err
 		}
 
-		handlerCtx := &lambdaCtx{lambdaContext: ctx, lambdaEvent: evt}
+		handlerCtx := &lambdaCtx{lambdaContext: ctx, lambdaEvent: evt, injector: b.injector}
 		in := []reflect.Value{
 			reflect.ValueOf(handlerCtx),
 			req.Elem(),
