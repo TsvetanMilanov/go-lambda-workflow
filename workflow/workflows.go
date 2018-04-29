@@ -3,7 +3,6 @@ package workflow
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"reflect"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -12,8 +11,8 @@ import (
 // BaseWorkflow is the base lambda workflow.
 type BaseWorkflow struct {
 	bootstrap   Bootstrap
-	preActions  []PreAction
-	postActions []PostAction
+	preActions  []Action
+	postActions []Action
 }
 
 func (w *BaseWorkflow) createContext(ctx context.Context, evt interface{}) *lambdaCtx {
@@ -25,17 +24,15 @@ func (w *BaseWorkflow) createContext(ctx context.Context, evt interface{}) *lamb
 	return &lambdaCtx{lambdaContext: ctx, lambdaEvent: evt, injector: injector}
 }
 
-func (w *BaseWorkflow) invokeHandler(awsContext context.Context, evt interface{}, evtBytes []byte, handler interface{}) (*lambdaCtx, error) {
+func (w *BaseWorkflow) invokeHandler(awsContext context.Context, evt interface{}, evtBytes []byte, handler interface{}) (*lambdaCtx, Error) {
 	// Create handler workflow context and register the dependencies
 	// in the bootstrap if there are any.
 	hContext := w.createContext(awsContext, evt)
 
 	// Execute Pre Actions.
-	for _, a := range w.preActions {
-		err := a(hContext)
-		if err != nil {
-			return hContext, err
-		}
+	err := w.executeActions(hContext, w.preActions)
+	if err != nil {
+		return hContext, err
 	}
 
 	in := []reflect.Value{
@@ -45,7 +42,7 @@ func (w *BaseWorkflow) invokeHandler(awsContext context.Context, evt interface{}
 	// Add request parameter to the handler input if there is
 	// input parameter.
 	hValue := reflect.ValueOf(handler)
-	if hValue.Type().NumIn() > 1 {
+	if reflect.TypeOf(handler).NumIn() > 1 {
 		req, err := w.getHandlerInputFromEvent(handler, evtBytes)
 		if err != nil {
 			return hContext, err
@@ -54,28 +51,29 @@ func (w *BaseWorkflow) invokeHandler(awsContext context.Context, evt interface{}
 		in = append(in, req)
 	}
 
+	// Invoke the provided handler.
 	out := hValue.Call(in)
-	for _, a := range w.postActions {
-		err := a(hContext)
-		if err != nil {
-			return hContext, err
-		}
+
+	// Execute Post Action.
+	err = w.executeActions(hContext, w.postActions)
+	if err != nil {
+		return hContext, err
 	}
 
 	resErr := out[0].Interface()
 	if resErr != nil {
 		err, ok := resErr.(error)
 		if !ok {
-			return hContext, errors.New("invalid handler error result")
+			return hContext, newErrorWithMessage("invalid handler error result")
 		}
 
-		return hContext, err
+		return hContext, newError(err)
 	}
 
 	return hContext, nil
 }
 
-func (w *BaseWorkflow) getHandlerInputFromEvent(handler interface{}, evt []byte) (reflect.Value, error) {
+func (w *BaseWorkflow) getHandlerInputFromEvent(handler interface{}, evt []byte) (reflect.Value, Error) {
 	hType := reflect.TypeOf(handler)
 	inputType := hType.In(1)
 	// The inputValue will always be have type *inputType.
@@ -90,7 +88,7 @@ func (w *BaseWorkflow) getHandlerInputFromEvent(handler interface{}, evt []byte)
 
 	err := json.Unmarshal(evt, inputValue.Interface())
 	if err != nil {
-		return reflect.Value{}, err
+		return reflect.Value{}, newError(err)
 	}
 
 	if inputType.Kind() == reflect.Ptr {
@@ -98,6 +96,17 @@ func (w *BaseWorkflow) getHandlerInputFromEvent(handler interface{}, evt []byte)
 	}
 
 	return inputValue.Elem(), nil
+}
+
+func (w *BaseWorkflow) executeActions(c Context, actions []Action) Error {
+	for _, a := range w.postActions {
+		err := a(c)
+		if err != nil {
+			return newError(err)
+		}
+	}
+
+	return nil
 }
 
 // APIGatewayProxyWorkflow AWS API Gateway Lambda Proxy request/response workflow.
@@ -109,50 +118,77 @@ type APIGatewayProxyWorkflow struct {
 // GetLambdaHandler returns AWS API Gateway Proxy Lambda handler.
 func (w *APIGatewayProxyWorkflow) GetLambdaHandler() APIGWProxyHandler {
 	return func(ctx context.Context, evt events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-		reqBytes, err := w.getReqBytes(evt)
-		if err != nil {
-			return nil, err
+		h, ok := w.httpHandlers[getHandlerKey(evt.HTTPMethod, evt.Path)]
+		if !ok {
+			return defaultAPIGWProxyHandler(ctx, evt)
 		}
 
-		h := w.httpHandlers[getHandlerKey(evt.HTTPMethod, evt.Path)]
+		var reqBytes []byte
+		var err error
+		hType := reflect.TypeOf(h)
+		// Get event bytes only if the handler has input parameter.
+		if hType.NumIn() > 1 {
+			// Use directly the event body if the handler input parameter
+			// has type string or []byte.
+			handlerInputType := hType.In(1)
+			if handlerInputType.Kind() == reflect.Struct {
+				reqBytes, err = w.getReqBytes(evt)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				reqBytes = []byte(evt.Body)
+			}
+		}
+
 		hContext, err := w.BaseWorkflow.invokeHandler(ctx, evt, reqBytes, h)
 		if err != nil {
 			return nil, err
 		}
 
-		resBody, err := json.Marshal(hContext.response)
-		if err != nil {
-			return nil, err
+		var resBytes []byte
+		var mErr error
+		if hContext.response != nil {
+			resBytes, mErr = json.Marshal(hContext.response)
+			if mErr != nil {
+				return nil, newError(mErr)
+			}
+		}
+
+		var resBody string
+		if len(resBytes) > 0 {
+			resBody = string(resBytes)
 		}
 
 		proxyRes := events.APIGatewayProxyResponse{
 			StatusCode: hContext.responseStatusCode,
-			Body:       string(resBody),
+			Body:       resBody,
 		}
 		return &proxyRes, nil
 	}
 }
 
-func (w *APIGatewayProxyWorkflow) getReqBytes(evt events.APIGatewayProxyRequest) ([]byte, error) {
-	result := make(map[string]interface{})
+func (w *APIGatewayProxyWorkflow) getReqBytes(evt events.APIGatewayProxyRequest) ([]byte, Error) {
+	input := make(map[string]interface{})
 	if len(evt.Body) > 0 {
-		err := json.Unmarshal([]byte(evt.Body), result)
+		err := json.Unmarshal([]byte(evt.Body), &input)
 		if err != nil {
-			return nil, err
+			return nil, newError(err)
 		}
 	}
 
 	for k, v := range evt.Headers {
-		result[k] = v
+		input[k] = v
 	}
 
 	for k, v := range evt.PathParameters {
-		result[k] = v
+		input[k] = v
 	}
 
 	for k, v := range evt.QueryStringParameters {
-		result[k] = v
+		input[k] = v
 	}
 
-	return json.Marshal(result)
+	res, err := json.Marshal(input)
+	return res, newError(err)
 }

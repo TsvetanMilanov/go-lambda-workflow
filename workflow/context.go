@@ -2,15 +2,13 @@ package workflow
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"reflect"
 )
 
 // Context is the AWS Lambda Workflow context.
 type Context interface {
 	GetLambdaContext() context.Context
-	GetLambdaEvent(out interface{}) error
+	GetLambdaEvent(out interface{}) Error
 	GetInjector() Injector
 	SetResponse(interface{}) Context
 	SetResponseStatusCode(int) Context
@@ -41,26 +39,26 @@ func (c *lambdaCtx) GetLambdaContext() context.Context {
 	return c.lambdaContext
 }
 
-func (c *lambdaCtx) GetLambdaEvent(out interface{}) (err error) {
+func (c *lambdaCtx) GetLambdaEvent(out interface{}) (err Error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("cannot fet lambda event, reson is: %s", r)
+			err = newErrorWithMessage("cannot fet lambda event, reson is: %s", r)
 		}
 	}()
 
 	outValue := reflect.ValueOf(out)
 	if outValue.Kind() != reflect.Ptr {
-		return errors.New("the out parameter must be a pointer")
+		return newErrorWithMessage("the out parameter must be a pointer")
 	}
 
 	if !outValue.Elem().CanSet() {
-		return errors.New("can't set lambda event out value")
+		return newErrorWithMessage("can't set lambda event out value")
 	}
 
 	evtType := reflect.TypeOf(c.lambdaEvent)
 	outType := outValue.Elem().Type()
 	if evtType != outType {
-		return fmt.Errorf("cannot set event of type %s to output of type %s", evtType.Name(), outType.Name())
+		return newErrorWithMessage("cannot set event of type %s to output of type %s", evtType.Name(), outType.Name())
 	}
 
 	outValue.Elem().Set(reflect.ValueOf(c.lambdaEvent))

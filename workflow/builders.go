@@ -7,8 +7,8 @@ import (
 // BaseWorkflowBuilder is the base workflow builder.
 type BaseWorkflowBuilder struct {
 	bootstrap   Bootstrap
-	preActions  []PreAction
-	postActions []PostAction
+	preActions  []Action
+	postActions []Action
 }
 
 // SetBootstrap sets the bootstrap function to the workflow.
@@ -18,13 +18,13 @@ func (b *BaseWorkflowBuilder) SetBootstrap(bootstrap Bootstrap) *BaseWorkflowBui
 }
 
 // AddPreAction adds Pre Action to the workflow.
-func (b *BaseWorkflowBuilder) AddPreAction(action PreAction) *BaseWorkflowBuilder {
+func (b *BaseWorkflowBuilder) AddPreAction(action Action) *BaseWorkflowBuilder {
 	b.preActions = append(b.preActions, action)
 	return b
 }
 
 // AddPostAction adds Post Action to the workflow.
-func (b *BaseWorkflowBuilder) AddPostAction(action PostAction) *BaseWorkflowBuilder {
+func (b *BaseWorkflowBuilder) AddPostAction(action Action) *BaseWorkflowBuilder {
 	b.postActions = append(b.postActions, action)
 	return b
 }
@@ -37,8 +37,8 @@ func (b *BaseWorkflowBuilder) Build() *BaseWorkflow {
 // NewBaseWorkflowBuilder creates new Base workflow builder.
 func NewBaseWorkflowBuilder() *BaseWorkflowBuilder {
 	return &BaseWorkflowBuilder{
-		preActions:  []PreAction{},
-		postActions: []PostAction{},
+		preActions:  []Action{},
+		postActions: []Action{},
 	}
 }
 
