@@ -168,6 +168,37 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 			So(res.StatusCode, ShouldEqual, http.StatusOK)
 			So(res.Body, ShouldEqual, fmt.Sprintf(`"%s"`, input))
 		})
+
+		Convey("Should return API Gateway proxy response with raw response set in the handler context.", func() {
+			rawRes := events.APIGatewayProxyResponse{StatusCode: http.StatusOK, Body: "test"}
+			handler := func(c workflow.Context) error {
+				c.SetRawResponse(rawRes)
+				return nil
+			}
+
+			w := workflow.NewAPIGWProxyWorkflowBuilder().
+				AddGetHandler("/", handler).
+				Build()
+
+			res, err := w.GetLambdaHandler()(nil, apigwReq)
+
+			So(err, ShouldBeNil)
+			So(*res, ShouldResemble, rawRes)
+
+			handler = func(c workflow.Context) error {
+				c.SetRawResponse(&rawRes)
+				return nil
+			}
+
+			w = workflow.NewAPIGWProxyWorkflowBuilder().
+				AddGetHandler("/", handler).
+				Build()
+
+			res, err = w.GetLambdaHandler()(nil, apigwReq)
+
+			So(err, ShouldBeNil)
+			So(*res, ShouldResemble, rawRes)
+		})
 	})
 }
 

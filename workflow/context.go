@@ -11,6 +11,7 @@ type Context interface {
 	GetLambdaEvent(out interface{}) Error
 	GetInjector() Injector
 	SetResponse(interface{}) Context
+	SetRawResponse(interface{}) Context
 	SetResponseStatusCode(int) Context
 }
 
@@ -22,11 +23,17 @@ type lambdaCtx struct {
 
 	// Set by the user
 	response           interface{}
+	rawResponse        interface{}
 	responseStatusCode int
 }
 
 func (c *lambdaCtx) SetResponse(res interface{}) Context {
 	c.response = res
+	return c
+}
+
+func (c *lambdaCtx) SetRawResponse(res interface{}) Context {
+	c.rawResponse = res
 	return c
 }
 

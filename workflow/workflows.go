@@ -146,6 +146,18 @@ func (w *APIGatewayProxyWorkflow) GetLambdaHandler() APIGWProxyHandler {
 			return nil, err
 		}
 
+		// Handle Raw response.
+		if hContext.rawResponse != nil {
+			if r, ok := hContext.rawResponse.(events.APIGatewayProxyResponse); ok {
+				return &r, nil
+			} else if r, ok := hContext.rawResponse.(*events.APIGatewayProxyResponse); ok {
+				return r, nil
+			} else {
+				return nil, newErrorWithMessage("invalid raw response")
+			}
+		}
+
+		// Handle response body.
 		var resBytes []byte
 		var mErr error
 		if hContext.response != nil {
