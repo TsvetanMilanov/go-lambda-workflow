@@ -55,6 +55,24 @@ func (b *APIGWProxyWorkflowBuilder) AddGetHandler(path string, handler interface
 	return b
 }
 
+// SetBootstrap override just to return the correct builder.
+func (b *APIGWProxyWorkflowBuilder) SetBootstrap(bootstrap Bootstrap) *APIGWProxyWorkflowBuilder {
+	b.BaseWorkflowBuilder.SetBootstrap(bootstrap)
+	return b
+}
+
+// AddPreAction adds Pre Action to the workflow.
+func (b *APIGWProxyWorkflowBuilder) AddPreAction(action Action) *APIGWProxyWorkflowBuilder {
+	b.BaseWorkflowBuilder.AddPreAction(action)
+	return b
+}
+
+// AddPostAction adds Post Action to the workflow.
+func (b *APIGWProxyWorkflowBuilder) AddPostAction(action Action) *APIGWProxyWorkflowBuilder {
+	b.BaseWorkflowBuilder.AddPostAction(action)
+	return b
+}
+
 // Build creates the AWS Lambda workflow.
 func (b *APIGWProxyWorkflowBuilder) Build() *APIGatewayProxyWorkflow {
 	return &APIGatewayProxyWorkflow{
