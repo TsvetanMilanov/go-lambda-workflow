@@ -2,4 +2,4 @@
 	test
 
 test:
-	@go test -v ./test
+	@go test -v -cover github.com/TsvetanMilanov/go-lambda-workflow/workflow

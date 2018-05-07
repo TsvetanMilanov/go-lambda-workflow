@@ -1,4 +1,4 @@
-package test
+package workflow
 
 import (
 	"encoding/json"
@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
-
-	"github.com/TsvetanMilanov/go-lambda-workflow/workflow"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -27,13 +25,13 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 		apigwReq := getAPIGWProxyRequest(http.MethodGet, "/", input)
 
 		Convey("Should return API Gateway proxy response with JSON request body.", func() {
-			handler := func(c workflow.Context, req JSONReq) error {
+			handler := func(c Context, req JSONReq) error {
 				So(req, ShouldResemble, input)
 				c.SetResponse(req).SetResponseStatusCode(req.Code)
 				return nil
 			}
 
-			w := workflow.NewAPIGWProxyWorkflowBuilder().
+			w := NewAPIGWProxyWorkflowBuilder().
 				AddGetHandler("/", handler).
 				Build()
 
@@ -58,13 +56,13 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 
 			apigwReq := getAPIGWProxyRequest(http.MethodGet, "/", input)
 
-			handler := func(c workflow.Context, req []JSONReq) error {
+			handler := func(c Context, req []JSONReq) error {
 				So(req, ShouldResemble, input)
 				c.SetResponse(req).SetResponseStatusCode(http.StatusOK)
 				return nil
 			}
 
-			w := workflow.NewAPIGWProxyWorkflowBuilder().
+			w := NewAPIGWProxyWorkflowBuilder().
 				AddGetHandler("/", handler).
 				Build()
 
@@ -76,13 +74,13 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 		})
 
 		Convey("Should return API Gateway proxy response with JSON request body and pointer input.", func() {
-			ptrHandler := func(c workflow.Context, req *JSONReq) error {
+			ptrHandler := func(c Context, req *JSONReq) error {
 				So(*req, ShouldResemble, input)
 				c.SetResponse(req).SetResponseStatusCode(req.Code)
 				return nil
 			}
 
-			w := workflow.NewAPIGWProxyWorkflowBuilder().
+			w := NewAPIGWProxyWorkflowBuilder().
 				AddGetHandler("/", ptrHandler).
 				Build()
 
@@ -94,12 +92,12 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 		})
 
 		Convey("Should return API Gateway proxy response with JSON request body and no input parameter in the handler.", func() {
-			handler := func(c workflow.Context) error {
+			handler := func(c Context) error {
 				c.SetResponseStatusCode(http.StatusOK)
 				return nil
 			}
 
-			w := workflow.NewAPIGWProxyWorkflowBuilder().
+			w := NewAPIGWProxyWorkflowBuilder().
 				AddGetHandler("/", handler).
 				Build()
 
@@ -111,12 +109,12 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 		})
 
 		Convey("Should return not found API Gateway proxy response when no handler was found.", func() {
-			handler := func(c workflow.Context) error {
+			handler := func(c Context) error {
 				c.SetResponseStatusCode(http.StatusOK)
 				return nil
 			}
 
-			w := workflow.NewAPIGWProxyWorkflowBuilder().
+			w := NewAPIGWProxyWorkflowBuilder().
 				AddGetHandler("/no-such-path", handler).
 				Build()
 
@@ -132,12 +130,12 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 
 			apigwReq := getAPIGWProxyRequest(http.MethodGet, "/", input)
 
-			handler := func(c workflow.Context, input string) error {
+			handler := func(c Context, input string) error {
 				c.SetResponse(input).SetResponseStatusCode(http.StatusOK)
 				return nil
 			}
 
-			w := workflow.NewAPIGWProxyWorkflowBuilder().
+			w := NewAPIGWProxyWorkflowBuilder().
 				AddGetHandler("/", handler).
 				Build()
 
@@ -153,12 +151,12 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 
 			apigwReq := getAPIGWProxyRequest(http.MethodGet, "/", input)
 
-			handler := func(c workflow.Context, input []byte) error {
+			handler := func(c Context, input []byte) error {
 				c.SetResponse(input).SetResponseStatusCode(http.StatusOK)
 				return nil
 			}
 
-			w := workflow.NewAPIGWProxyWorkflowBuilder().
+			w := NewAPIGWProxyWorkflowBuilder().
 				AddGetHandler("/", handler).
 				Build()
 
@@ -171,12 +169,12 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 
 		Convey("Should return API Gateway proxy response with raw response set in the handler context.", func() {
 			rawRes := events.APIGatewayProxyResponse{StatusCode: http.StatusOK, Body: "test"}
-			handler := func(c workflow.Context) error {
+			handler := func(c Context) error {
 				c.SetRawResponse(rawRes)
 				return nil
 			}
 
-			w := workflow.NewAPIGWProxyWorkflowBuilder().
+			w := NewAPIGWProxyWorkflowBuilder().
 				AddGetHandler("/", handler).
 				Build()
 
@@ -185,12 +183,12 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(*res, ShouldResemble, rawRes)
 
-			handler = func(c workflow.Context) error {
+			handler = func(c Context) error {
 				c.SetRawResponse(&rawRes)
 				return nil
 			}
 
-			w = workflow.NewAPIGWProxyWorkflowBuilder().
+			w = NewAPIGWProxyWorkflowBuilder().
 				AddGetHandler("/", handler).
 				Build()
 
