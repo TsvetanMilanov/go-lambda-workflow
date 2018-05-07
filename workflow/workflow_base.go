@@ -14,10 +14,10 @@ type BaseWorkflow struct {
 }
 
 // InvokeHandler invokes the provided handler.
-func (w *BaseWorkflow) InvokeHandler(awsContext context.Context, evt interface{}, evtBytes []byte, handler interface{}) (Context, Error) {
+func (w *BaseWorkflow) InvokeHandler(awsContext context.Context, evt interface{}, evtBytes []byte, hData *handlerData) (Context, Error) {
 	// Add request parameter to the handler input if there is
 	// input parameter.
-	req, err := w.getReqParamIfAny(handler, evtBytes)
+	req, err := w.getReqParamIfAny(hData.handler, evtBytes)
 	if err != nil {
 		return w.createContext(awsContext, evt, nil), err
 	}
@@ -40,9 +40,21 @@ func (w *BaseWorkflow) InvokeHandler(awsContext context.Context, evt interface{}
 		in = append(in, *req)
 	}
 
-	hValue := reflect.ValueOf(handler)
+	hValue := reflect.ValueOf(hData.handler)
+	// Execute Pre Handler Actions.
+	err = w.executeActions(hContext, hData.preActions)
+	if err != nil {
+		return hContext, err
+	}
+
 	// Invoke the provided handler.
 	out := hValue.Call(in)
+
+	// Execute Post Handler Actions.
+	err = w.executeActions(hContext, hData.postActions)
+	if err != nil {
+		return hContext, err
+	}
 
 	// Execute Post Action.
 	err = w.executeActions(hContext, w.postActions)
