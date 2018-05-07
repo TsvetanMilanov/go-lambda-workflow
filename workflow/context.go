@@ -51,7 +51,7 @@ func (c *lambdaCtx) GetLambdaContext() context.Context {
 func (c *lambdaCtx) GetLambdaEvent(out interface{}) (err Error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = newErrorWithMessage("cannot fet lambda event, reson is: %s", r)
+			err = newErrorWithMessage("cannot get lambda event, reson is: %s", r)
 		}
 	}()
 
