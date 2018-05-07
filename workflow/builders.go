@@ -50,8 +50,28 @@ type APIGWProxyWorkflowBuilder struct {
 
 // AddGetHandler adds the provided handler to the specified path and GET HTTP method.
 func (b *APIGWProxyWorkflowBuilder) AddGetHandler(path string, handler interface{}) *APIGWProxyWorkflowBuilder {
+	return b.AddMethodHandler(http.MethodGet, path, handler)
+}
+
+// AddPostHandler adds the provided handler to the specified path and POST HTTP method.
+func (b *APIGWProxyWorkflowBuilder) AddPostHandler(path string, handler interface{}) *APIGWProxyWorkflowBuilder {
+	return b.AddMethodHandler(http.MethodPost, path, handler)
+}
+
+// AddPutHandler adds the provided handler to the specified path and PUT HTTP method.
+func (b *APIGWProxyWorkflowBuilder) AddPutHandler(path string, handler interface{}) *APIGWProxyWorkflowBuilder {
+	return b.AddMethodHandler(http.MethodPut, path, handler)
+}
+
+// AddDeleteHandler adds the provided handler to the specified path and DELETE HTTP method.
+func (b *APIGWProxyWorkflowBuilder) AddDeleteHandler(path string, handler interface{}) *APIGWProxyWorkflowBuilder {
+	return b.AddMethodHandler(http.MethodDelete, path, handler)
+}
+
+// AddMethodHandler adds the provided handler to the specified path with the provided HTTP method.
+func (b *APIGWProxyWorkflowBuilder) AddMethodHandler(httpMethod, path string, handler interface{}) *APIGWProxyWorkflowBuilder {
 	// TODO: Validate handler func.
-	b.httpHandlers[getHandlerKey(http.MethodGet, path)] = handler
+	b.httpHandlers[getHandlerKey(httpMethod, path)] = handler
 	return b
 }
 
