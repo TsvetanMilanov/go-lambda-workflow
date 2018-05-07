@@ -10,6 +10,7 @@ type Context interface {
 	GetLambdaContext() context.Context
 	GetLambdaEvent(out interface{}) Error
 	GetInjector() Injector
+	GetRequestObject(out interface{}) Error
 	SetResponse(interface{}) Context
 	SetRawResponse(interface{}) Context
 	SetResponseStatusCode(int) Context
@@ -20,6 +21,7 @@ type lambdaCtx struct {
 	lambdaContext context.Context
 	lambdaEvent   interface{}
 	injector      Injector
+	req           *reflect.Value
 
 	// Set by the user
 	response           interface{}
@@ -74,4 +76,17 @@ func (c *lambdaCtx) GetLambdaEvent(out interface{}) (err Error) {
 
 func (c *lambdaCtx) GetInjector() Injector {
 	return c.injector
+}
+
+func (c *lambdaCtx) GetRequestObject(out interface{}) Error {
+	outValue := reflect.ValueOf(out)
+	if outValue.Kind() != reflect.Ptr {
+		return newErrorWithMessage("the out parameter is not a pointer")
+	}
+
+	if c.req != nil {
+		reflect.ValueOf(out).Elem().Set(c.req.Elem())
+	}
+
+	return nil
 }
