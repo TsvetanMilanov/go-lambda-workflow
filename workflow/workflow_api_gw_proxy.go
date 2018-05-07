@@ -40,11 +40,12 @@ func (w *APIGatewayProxyWorkflow) GetLambdaHandler() APIGWProxyHandler {
 			}
 		}
 
-		hContext, err := w.BaseWorkflow.invokeHandler(ctx, evt, reqBytes, h)
+		c, err := w.BaseWorkflow.InvokeHandler(ctx, evt, reqBytes, h)
 		if err != nil {
 			return nil, err
 		}
 
+		hContext := c.(*lambdaCtx)
 		// Handle Raw response.
 		if hContext.rawResponse != nil {
 			if r, ok := hContext.rawResponse.(events.APIGatewayProxyResponse); ok {

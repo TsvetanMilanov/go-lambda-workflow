@@ -13,16 +13,8 @@ type BaseWorkflow struct {
 	postActions []Action
 }
 
-func (w *BaseWorkflow) createContext(ctx context.Context, evt interface{}, req *reflect.Value) *lambdaCtx {
-	var injector Injector
-	if !reflect.ValueOf(w.bootstrap).IsNil() {
-		injector = w.bootstrap()
-	}
-
-	return &lambdaCtx{lambdaContext: ctx, lambdaEvent: evt, injector: injector, req: req}
-}
-
-func (w *BaseWorkflow) invokeHandler(awsContext context.Context, evt interface{}, evtBytes []byte, handler interface{}) (*lambdaCtx, Error) {
+// InvokeHandler invokes the provided handler.
+func (w *BaseWorkflow) InvokeHandler(awsContext context.Context, evt interface{}, evtBytes []byte, handler interface{}) (Context, Error) {
 	// Add request parameter to the handler input if there is
 	// input parameter.
 	req, err := w.getReqParamIfAny(handler, evtBytes)
@@ -69,6 +61,15 @@ func (w *BaseWorkflow) invokeHandler(awsContext context.Context, evt interface{}
 	}
 
 	return hContext, nil
+}
+
+func (w *BaseWorkflow) createContext(ctx context.Context, evt interface{}, req *reflect.Value) *lambdaCtx {
+	var injector Injector
+	if !reflect.ValueOf(w.bootstrap).IsNil() {
+		injector = w.bootstrap()
+	}
+
+	return &lambdaCtx{lambdaContext: ctx, lambdaEvent: evt, injector: injector, req: req}
 }
 
 func (w *BaseWorkflow) getHandlerInputFromEvent(handler interface{}, evt []byte) (reflect.Value, Error) {
