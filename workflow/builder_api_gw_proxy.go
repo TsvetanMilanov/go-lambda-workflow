@@ -33,7 +33,7 @@ func (b *APIGWProxyWorkflowBuilder) AddDeleteHandler(path string, handler interf
 // AddMethodHandler adds the provided handler to the specified path with the provided HTTP method.
 func (b *APIGWProxyWorkflowBuilder) AddMethodHandler(httpMethod, path string, handler interface{}) *APIGWPrePostHandlerActionBuilder {
 	// TODO: Validate handler func.
-	hData := &handlerData{handler: handler}
+	hData := &handlerData{handler: handler, preActions: []Action{}, postActions: []Action{}}
 	b.httpHandlers[getHandlerKey(httpMethod, path)] = hData
 	return newAPIGWPrePostHandlerActionBuilder(b, hData)
 }
@@ -79,20 +79,20 @@ type APIGWPrePostHandlerActionBuilder struct {
 	handler *handlerData
 }
 
-// AddPreAction adds the pre action to the previously added handler.
-func (b *APIGWPrePostHandlerActionBuilder) AddPreAction(action Action) *APIGWPrePostHandlerActionBuilder {
-	b.handler.preActions = append(b.handler.preActions, action)
+// WithPreActions adds the pre actions to the previously added handler.
+func (b *APIGWPrePostHandlerActionBuilder) WithPreActions(actions ...Action) *APIGWPrePostHandlerActionBuilder {
+	b.handler.preActions = append(b.handler.preActions, actions...)
 	return b
 }
 
-// AddPostAction adds the post action to the previously added handler.
-func (b *APIGWPrePostHandlerActionBuilder) AddPostAction(action Action) *APIGWPrePostHandlerActionBuilder {
-	b.handler.postActions = append(b.handler.postActions, action)
+// WithPostActions adds the post actions to the previously added handler.
+func (b *APIGWPrePostHandlerActionBuilder) WithPostActions(actions ...Action) *APIGWPrePostHandlerActionBuilder {
+	b.handler.postActions = append(b.handler.postActions, actions...)
 	return b
 }
 
 func newAPIGWPrePostHandlerActionBuilder(b *APIGWProxyWorkflowBuilder, handler *handlerData) *APIGWPrePostHandlerActionBuilder {
-	return &APIGWPrePostHandlerActionBuilder{APIGWProxyWorkflowBuilder: b}
+	return &APIGWPrePostHandlerActionBuilder{APIGWProxyWorkflowBuilder: b, handler: handler}
 }
 
 type handlerData struct {

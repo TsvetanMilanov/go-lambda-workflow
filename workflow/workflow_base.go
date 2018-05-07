@@ -15,8 +15,6 @@ type BaseWorkflow struct {
 
 // InvokeHandler invokes the provided handler.
 func (w *BaseWorkflow) InvokeHandler(awsContext context.Context, evt interface{}, evtBytes []byte, hData *handlerData) (Context, Error) {
-	// Add request parameter to the handler input if there is
-	// input parameter.
 	req, err := w.getReqParamIfAny(hData.handler, evtBytes)
 	if err != nil {
 		return w.createContext(awsContext, evt, nil), err
@@ -32,10 +30,13 @@ func (w *BaseWorkflow) InvokeHandler(awsContext context.Context, evt interface{}
 		return hContext, err
 	}
 
+	// Add the handler context to the handler func.
 	in := []reflect.Value{
 		reflect.ValueOf(hContext),
 	}
 
+	// Add request parameter to the handler input if there is
+	// input parameter.
 	if req != nil {
 		in = append(in, *req)
 	}
@@ -110,7 +111,7 @@ func (w *BaseWorkflow) getHandlerInputFromEvent(handler interface{}, evt []byte)
 }
 
 func (w *BaseWorkflow) executeActions(c Context, actions []Action) Error {
-	for _, a := range w.postActions {
+	for _, a := range actions {
 		err := a(c)
 		if err != nil {
 			return newError(err)

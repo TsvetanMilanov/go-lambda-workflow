@@ -197,6 +197,56 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(*res, ShouldResemble, rawRes)
 		})
+
+		Convey("Should execute pre actions before the handler.", func() {
+			flow := ""
+			handler := func(c Context) error {
+				flow += "handler"
+				return nil
+			}
+			a1 := func(c Context) error {
+				flow += "pre1"
+				return nil
+			}
+			a2 := func(c Context) error {
+				flow += "pre2"
+				return nil
+			}
+
+			w := NewAPIGWProxyWorkflowBuilder().
+				AddGetHandler("/", handler).WithPreActions(a1, a2).
+				Build()
+
+			_, err := w.GetLambdaHandler()(nil, apigwReq)
+
+			So(err, ShouldBeNil)
+			So(flow, ShouldEqual, "pre1pre2handler")
+		})
+
+		Convey("Should execute post actions before the handler.", func() {
+			flow := ""
+			handler := func(c Context) error {
+				flow += "handler"
+				return nil
+			}
+			a1 := func(c Context) error {
+				flow += "post1"
+				return nil
+			}
+			a2 := func(c Context) error {
+				flow += "post2"
+				return nil
+			}
+
+			w := NewAPIGWProxyWorkflowBuilder().
+				AddGetHandler("/", handler).WithPostActions(a1, a2).
+				Build()
+
+			_, err := w.GetLambdaHandler()(nil, apigwReq)
+
+			So(err, ShouldBeNil)
+			So(flow, ShouldEqual, "handlerpost1post2")
+		})
 	})
 }
 
