@@ -11,6 +11,7 @@ type Context interface {
 	GetLambdaEvent(out interface{}) Error
 	GetInjector() Injector
 	GetRequestObject(out interface{}) Error
+	GetRequest() interface{}
 	SetResponse(interface{}) Context
 	SetRawResponse(interface{}) Context
 	SetResponseStatusCode(int) Context
@@ -89,4 +90,8 @@ func (c *lambdaCtx) GetRequestObject(out interface{}) Error {
 	}
 
 	return nil
+}
+
+func (c *lambdaCtx) GetRequest() interface{} {
+	return c.req.Interface()
 }
