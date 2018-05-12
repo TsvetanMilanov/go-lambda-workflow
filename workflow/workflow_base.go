@@ -44,7 +44,9 @@ func (w *BaseWorkflow) InvokeHandler(awsContext context.Context, evt interface{}
 	hValue := reflect.ValueOf(hData.handler)
 	// Execute Pre Handler Actions.
 	err = w.executeActions(hContext, hData.preActions)
-	if err != nil {
+	// Return result if the pre actions return error or
+	// if the pre actions set some result in the context.
+	if err != nil || hasResponse(hContext) {
 		return hContext, err
 	}
 
