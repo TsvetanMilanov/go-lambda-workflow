@@ -44,15 +44,15 @@ func (b *APIGWProxyWorkflowBuilder) SetBootstrap(bootstrap Bootstrap) *APIGWProx
 	return b
 }
 
-// AddPreAction adds Pre Action to the workflow.
-func (b *APIGWProxyWorkflowBuilder) AddPreAction(action Action) *APIGWProxyWorkflowBuilder {
-	b.BaseWorkflowBuilder.AddPreAction(action)
+// AddPreActions adds Pre Actions to the workflow.
+func (b *APIGWProxyWorkflowBuilder) AddPreActions(actions ...Action) *APIGWProxyWorkflowBuilder {
+	b.BaseWorkflowBuilder.AddPreActions(actions...)
 	return b
 }
 
-// AddPostAction adds Post Action to the workflow.
-func (b *APIGWProxyWorkflowBuilder) AddPostAction(action Action) *APIGWProxyWorkflowBuilder {
-	b.BaseWorkflowBuilder.AddPostAction(action)
+// AddPostActions adds Post Actions to the workflow.
+func (b *APIGWProxyWorkflowBuilder) AddPostActions(actions ...Action) *APIGWProxyWorkflowBuilder {
+	b.BaseWorkflowBuilder.AddPostActions(actions...)
 	return b
 }
 

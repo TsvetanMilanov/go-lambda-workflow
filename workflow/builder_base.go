@@ -13,15 +13,15 @@ func (b *BaseWorkflowBuilder) SetBootstrap(bootstrap Bootstrap) *BaseWorkflowBui
 	return b
 }
 
-// AddPreAction adds Pre Action to the workflow.
-func (b *BaseWorkflowBuilder) AddPreAction(action Action) *BaseWorkflowBuilder {
-	b.preActions = append(b.preActions, action)
+// AddPreActions adds Pre Actions to the workflow.
+func (b *BaseWorkflowBuilder) AddPreActions(actions ...Action) *BaseWorkflowBuilder {
+	b.preActions = append(b.preActions, actions...)
 	return b
 }
 
-// AddPostAction adds Post Action to the workflow.
-func (b *BaseWorkflowBuilder) AddPostAction(action Action) *BaseWorkflowBuilder {
-	b.postActions = append(b.postActions, action)
+// AddPostActions adds Post Actions to the workflow.
+func (b *BaseWorkflowBuilder) AddPostActions(actions ...Action) *BaseWorkflowBuilder {
+	b.postActions = append(b.postActions, actions...)
 	return b
 }
 
