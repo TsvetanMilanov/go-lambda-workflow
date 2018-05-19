@@ -9,14 +9,14 @@
     "lambda/messages",
     "lambdacontext"
   ]
-  revision = "fafa7e49388b8991caf99308e80655ba91816b72"
-  version = "v1.1.0"
+  revision = "4d30d0ff60440c2d0480a15747c96ee71c3c53d4"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/gopherjs/gopherjs"
   packages = ["js"]
-  revision = "fcfa75a46cca3b1ed8b2c75c4f6f0a88df581baa"
+  revision = "8dffc02ea1cb8398bb73f30424697c60fcf8d4c5"
 
 [[projects]]
   name = "github.com/jtolds/gls"
@@ -37,16 +37,9 @@
 [[projects]]
   name = "github.com/smartystreets/goconvey"
   packages = [
-    ".",
+    "convey",
     "convey/gotest",
-    "convey/reporting",
-    "web/server/api",
-    "web/server/contract",
-    "web/server/executor",
-    "web/server/messaging",
-    "web/server/parser",
-    "web/server/system",
-    "web/server/watch"
+    "convey/reporting"
   ]
   revision = "9e8dc3f972df6c8fcc0375ef492c24d0bb204857"
   version = "1.6.3"
@@ -54,6 +47,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3df5e2f9f0dc36d3fe671293aedc6148f2258f9bf1ffded16f4d91ae95d07370"
+  inputs-digest = "022f6e7055a1b06e08538db94f303ec269866ffe5106760fcf2e771989ed6644"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -13,3 +13,6 @@ type APIGWProxyHandler func(ctx context.Context, evt events.APIGatewayProxyReque
 var defaultAPIGWProxyHandler = func(ctx context.Context, evt events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 	return &events.APIGatewayProxyResponse{StatusCode: http.StatusNotFound}, nil
 }
+
+// APIGWAuthorizerHandler is AWS API Gateway Authorizer handler function.
+type APIGWAuthorizerHandler func(ctx context.Context, evt events.APIGatewayCustomAuthorizerRequest) (*events.APIGatewayCustomAuthorizerResponse, error)
