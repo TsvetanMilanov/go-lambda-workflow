@@ -17,7 +17,7 @@ type APIGatewayProxyWorkflow struct {
 // GetLambdaHandler returns AWS API Gateway Proxy Lambda handler.
 func (w *APIGatewayProxyWorkflow) GetLambdaHandler() APIGWProxyHandler {
 	return func(ctx context.Context, evt events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-		hData, ok := w.httpHandlers[getHandlerKey(evt.HTTPMethod, evt.Path)]
+		hData, ok := w.httpHandlers[getHandlerKey(evt.HTTPMethod, evt.Resource)]
 		if !ok {
 			return defaultAPIGWProxyHandler(ctx, evt)
 		}
