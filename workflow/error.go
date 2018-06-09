@@ -34,7 +34,7 @@ func newErrorWithMessage(format string, args ...interface{}) Error {
 	if len(args) > 0 {
 		// If the args len is 0 and we pass it to the Erorrf func,
 		// the error message will contain some more data.
-		return newError(fmt.Errorf(format, args))
+		return newError(fmt.Errorf(format, args...))
 	}
 
 	return newError(fmt.Errorf(format))

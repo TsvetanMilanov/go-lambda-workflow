@@ -11,6 +11,8 @@ type Context interface {
 	GetLambdaEvent(out interface{}) Error
 	GetInjector() Injector
 	GetRequestObject(out interface{}) Error
+	GetRawResponse(out interface{}) Error
+	GetHandlerError() error
 	GetRequest() interface{}
 	SetResponse(interface{}) Context
 	SetRawResponse(interface{}) Context
@@ -28,6 +30,8 @@ type lambdaCtx struct {
 	response           interface{}
 	rawResponse        interface{}
 	responseStatusCode int
+
+	handlerErr error
 }
 
 func (c *lambdaCtx) SetResponse(res interface{}) Context {
@@ -49,30 +53,16 @@ func (c *lambdaCtx) GetLambdaContext() context.Context {
 	return c.lambdaContext
 }
 
-func (c *lambdaCtx) GetLambdaEvent(out interface{}) (err Error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = newErrorWithMessage("cannot get lambda event, reson is: %s", r)
-		}
-	}()
+func (c *lambdaCtx) GetLambdaEvent(out interface{}) Error {
+	return setOutParameterValue(out, c.lambdaEvent, "lambda event")
+}
 
-	outValue := reflect.ValueOf(out)
-	if outValue.Kind() != reflect.Ptr {
-		return newErrorWithMessage("the out parameter must be a pointer")
-	}
+func (c *lambdaCtx) GetRawResponse(out interface{}) Error {
+	return setOutParameterValue(out, c.rawResponse, "raw response")
+}
 
-	if !outValue.Elem().CanSet() {
-		return newErrorWithMessage("can't set lambda event out value")
-	}
-
-	evtType := reflect.TypeOf(c.lambdaEvent)
-	outType := outValue.Elem().Type()
-	if evtType != outType {
-		return newErrorWithMessage("cannot set event of type %s to output of type %s", evtType.Name(), outType.Name())
-	}
-
-	outValue.Elem().Set(reflect.ValueOf(c.lambdaEvent))
-	return err
+func (c *lambdaCtx) GetHandlerError() error {
+	return c.handlerErr
 }
 
 func (c *lambdaCtx) GetInjector() Injector {

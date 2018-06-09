@@ -53,6 +53,17 @@ func (w *BaseWorkflow) InvokeHandler(awsContext context.Context, evt interface{}
 	// Invoke the provided handler.
 	out := hValue.Call(in)
 
+	resErr := out[0].Interface()
+	if resErr != nil {
+		err, ok := resErr.(error)
+		if !ok {
+			return hContext, newErrorWithMessage("invalid handler error result")
+		}
+
+		// Set the handler error only if the handler has returned valid error.
+		hContext.handlerErr = err
+	}
+
 	// Execute Post Handler Actions.
 	err = w.executeActions(hContext, hData.postActions)
 	if err != nil {
@@ -65,17 +76,7 @@ func (w *BaseWorkflow) InvokeHandler(awsContext context.Context, evt interface{}
 		return hContext, err
 	}
 
-	resErr := out[0].Interface()
-	if resErr != nil {
-		err, ok := resErr.(error)
-		if !ok {
-			return hContext, newErrorWithMessage("invalid handler error result")
-		}
-
-		return hContext, newError(err)
-	}
-
-	return hContext, nil
+	return hContext, newError(hContext.handlerErr)
 }
 
 func (w *BaseWorkflow) createContext(ctx context.Context, evt interface{}, req *reflect.Value) *lambdaCtx {
