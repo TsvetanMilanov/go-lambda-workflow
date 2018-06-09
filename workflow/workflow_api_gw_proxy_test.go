@@ -247,6 +247,50 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(flow, ShouldEqual, "handlerpost1post2")
 		})
+
+		Convey("Should handle paths correctly", func() {
+			Convey("Should make difference between paths containing / and paths which does not contain /", func() {
+				type testCase struct {
+					clean     string
+					withSlash string
+				}
+				testCases := []testCase{
+					{clean: "", withSlash: "/"},
+					{clean: "/test", withSlash: "/test/"},
+				}
+
+				for _, tc := range testCases {
+					handlerWithSlashCalled := false
+					handlerWithSlash := func(Context) error {
+						handlerWithSlashCalled = true
+						return nil
+					}
+					handlerCleanCalled := false
+					handlerClean := func(Context) error {
+						handlerCleanCalled = true
+						return nil
+					}
+					h := NewAPIGWProxyWorkflowBuilder().
+						AddGetHandler(tc.withSlash, handlerWithSlash).
+						AddGetHandler(tc.clean, handlerClean).
+						Build().
+						GetLambdaHandler()
+
+					_, err := h(nil, getAPIGWProxyRequest(http.MethodGet, tc.withSlash, nil))
+					So(err, ShouldBeNil)
+					So(handlerWithSlashCalled, ShouldBeTrue)
+					So(handlerCleanCalled, ShouldBeFalse)
+
+					handlerWithSlashCalled = false
+					handlerCleanCalled = false
+
+					_, err = h(nil, getAPIGWProxyRequest(http.MethodGet, tc.clean, nil))
+					So(err, ShouldBeNil)
+					So(handlerWithSlashCalled, ShouldBeFalse)
+					So(handlerCleanCalled, ShouldBeTrue)
+				}
+			})
+		})
 	})
 }
 

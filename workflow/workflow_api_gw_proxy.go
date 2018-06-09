@@ -11,13 +11,14 @@ import (
 // APIGatewayProxyWorkflow AWS API Gateway Lambda Proxy request/response workflow.
 type APIGatewayProxyWorkflow struct {
 	*BaseWorkflow
-	httpHandlers map[string]*handlerData
+	httpHandlers              map[string]*handlerData
+	parameterizedHTTPHandlers map[string]*handlerData
 }
 
 // GetLambdaHandler returns AWS API Gateway Proxy Lambda handler.
 func (w *APIGatewayProxyWorkflow) GetLambdaHandler() APIGWProxyHandler {
 	return func(ctx context.Context, evt events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-		hData, ok := w.httpHandlers[getHandlerKey(evt.HTTPMethod, evt.Resource)]
+		hData, ok := w.httpHandlers[getHandlerKey(evt.HTTPMethod, evt.Path)]
 		if !ok {
 			return defaultAPIGWProxyHandler(ctx, evt)
 		}
@@ -103,4 +104,8 @@ func (w *APIGatewayProxyWorkflow) getReqBytes(evt events.APIGatewayProxyRequest)
 
 	res, err := json.Marshal(input)
 	return res, newError(err)
+}
+
+func (w *APIGatewayProxyWorkflow) getHandler(evt events.APIGatewayProxyRequest) *handlerData {
+	return nil
 }
