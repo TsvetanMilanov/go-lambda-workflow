@@ -249,47 +249,90 @@ func TestAPIGWProxyWorkflow(t *testing.T) {
 		})
 
 		Convey("Should handle paths correctly", func() {
-			Convey("Should make difference between paths containing / and paths which does not contain /", func() {
-				type testCase struct {
-					clean     string
-					withSlash string
-				}
-				testCases := []testCase{
-					{clean: "", withSlash: "/"},
-					{clean: "/test", withSlash: "/test/"},
-				}
+			type testCase struct {
+				testName        string
+				cleanPath       string
+				specialPath     string
+				testCleanPath   string
+				testSpecialPath string
+			}
+			testCases := []testCase{
+				{
+					testName:        "Should make difference between paths containing / and paths which does not on root level.",
+					cleanPath:       "",
+					specialPath:     "/",
+					testCleanPath:   "",
+					testSpecialPath: "/",
+				},
+				{
+					testName:        "Should make difference between paths containing / and paths which does not on non root level.",
+					cleanPath:       "/test",
+					specialPath:     "/test/",
+					testCleanPath:   "/test",
+					testSpecialPath: "/test/",
+				},
+				{
+					testName:        "Should handle parameterized paths.",
+					cleanPath:       "/",
+					specialPath:     "/{id}",
+					testCleanPath:   "/",
+					testSpecialPath: "/5",
+				},
+				{
+					testName:        "Should handle nested parameterized paths.",
+					cleanPath:       "/car/",
+					specialPath:     "/car/{id}",
+					testCleanPath:   "/car/",
+					testSpecialPath: "/car/5",
+				},
+				{
+					testName:        "Should handle nested parameterized paths with multiple parameters.",
+					cleanPath:       "/car/6/model/",
+					specialPath:     "/car/{id}/model/{number}",
+					testCleanPath:   "/car/6/model/",
+					testSpecialPath: "/car/5/model/6",
+				},
+				{
+					testName:        "Should choose clean path over special path if there is registered clean path with hard-coded value which is like parameterized one.",
+					cleanPath:       "/car/6",
+					specialPath:     "/car/{id}",
+					testCleanPath:   "/car/6",
+					testSpecialPath: "/car/7",
+				},
+			}
 
-				for _, tc := range testCases {
-					handlerWithSlashCalled := false
-					handlerWithSlash := func(Context) error {
-						handlerWithSlashCalled = true
+			for _, tc := range testCases {
+				Convey(tc.testName, func() {
+					specialHandlerCalled := false
+					specialHandler := func(Context) error {
+						specialHandlerCalled = true
 						return nil
 					}
-					handlerCleanCalled := false
-					handlerClean := func(Context) error {
-						handlerCleanCalled = true
+					cleanHandlerCalled := false
+					cleanHandler := func(Context) error {
+						cleanHandlerCalled = true
 						return nil
 					}
 					h := NewAPIGWProxyWorkflowBuilder().
-						AddGetHandler(tc.withSlash, handlerWithSlash).
-						AddGetHandler(tc.clean, handlerClean).
+						AddGetHandler(tc.specialPath, specialHandler).
+						AddGetHandler(tc.cleanPath, cleanHandler).
 						Build().
 						GetLambdaHandler()
 
-					_, err := h(nil, getAPIGWProxyRequest(http.MethodGet, tc.withSlash, nil))
+					_, err := h(nil, getAPIGWProxyRequest(http.MethodGet, tc.testSpecialPath, nil))
 					So(err, ShouldBeNil)
-					So(handlerWithSlashCalled, ShouldBeTrue)
-					So(handlerCleanCalled, ShouldBeFalse)
+					So(specialHandlerCalled, ShouldBeTrue)
+					So(cleanHandlerCalled, ShouldBeFalse)
 
-					handlerWithSlashCalled = false
-					handlerCleanCalled = false
+					specialHandlerCalled = false
+					cleanHandlerCalled = false
 
-					_, err = h(nil, getAPIGWProxyRequest(http.MethodGet, tc.clean, nil))
+					_, err = h(nil, getAPIGWProxyRequest(http.MethodGet, tc.testCleanPath, nil))
 					So(err, ShouldBeNil)
-					So(handlerWithSlashCalled, ShouldBeFalse)
-					So(handlerCleanCalled, ShouldBeTrue)
-				}
-			})
+					So(specialHandlerCalled, ShouldBeFalse)
+					So(cleanHandlerCalled, ShouldBeTrue)
+				})
+			}
 		})
 	})
 }

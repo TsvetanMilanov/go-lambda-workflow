@@ -2,12 +2,18 @@ package workflow
 
 import (
 	"net/http"
+	"regexp"
+)
+
+var (
+	parameterizedPathRegExp = regexp.MustCompile(`.*(\{.*\}).*`)
 )
 
 // APIGWProxyWorkflowBuilder AWS Lambda handler workflow builder.
 type APIGWProxyWorkflowBuilder struct {
 	*BaseWorkflowBuilder
-	httpHandlers map[string]*handlerData
+	httpHandlers              map[string]*handlerData
+	parameterizedHTTPHandlers []*parameterizedHandlerData
 }
 
 // AddGetHandler adds the provided handler to the specified path and GET HTTP method.
@@ -34,7 +40,19 @@ func (b *APIGWProxyWorkflowBuilder) AddDeleteHandler(path string, handler interf
 func (b *APIGWProxyWorkflowBuilder) AddMethodHandler(httpMethod, path string, handler interface{}) *APIGWPrePostHandlerActionBuilder {
 	// TODO: Validate handler func.
 	hData := &handlerData{handler: handler, preActions: []Action{}, postActions: []Action{}}
-	b.httpHandlers[getHandlerKey(httpMethod, path)] = hData
+
+	// TODO: Check if path already exist.
+	if b.isParameterizedPath(path) {
+		phData := &parameterizedHandlerData{
+			hData:        hData,
+			pathRegExp:   regexp.MustCompile(parameterizedPathRegExp.ReplaceAllString(path, "(.*)")),
+			originalPath: path,
+			method:       httpMethod,
+		}
+		b.parameterizedHTTPHandlers = append(b.parameterizedHTTPHandlers, phData)
+	} else {
+		b.httpHandlers[getHandlerKey(httpMethod, path)] = hData
+	}
 	return newAPIGWPrePostHandlerActionBuilder(b, hData)
 }
 
@@ -59,8 +77,9 @@ func (b *APIGWProxyWorkflowBuilder) AddPostActions(actions ...Action) *APIGWProx
 // Build creates the AWS Lambda workflow.
 func (b *APIGWProxyWorkflowBuilder) Build() *APIGatewayProxyWorkflow {
 	return &APIGatewayProxyWorkflow{
-		BaseWorkflow: b.BaseWorkflowBuilder.Build(),
-		httpHandlers: b.httpHandlers,
+		BaseWorkflow:              b.BaseWorkflowBuilder.Build(),
+		httpHandlers:              b.httpHandlers,
+		parameterizedHTTPHandlers: b.parameterizedHTTPHandlers,
 	}
 }
 
@@ -91,6 +110,10 @@ func (b *APIGWPrePostHandlerActionBuilder) WithPostActions(actions ...Action) *A
 	return b
 }
 
+func (b *APIGWProxyWorkflowBuilder) isParameterizedPath(path string) bool {
+	return len(parameterizedPathRegExp.FindStringSubmatchIndex(path)) > 0
+}
+
 func newAPIGWPrePostHandlerActionBuilder(b *APIGWProxyWorkflowBuilder, handler *handlerData) *APIGWPrePostHandlerActionBuilder {
 	return &APIGWPrePostHandlerActionBuilder{APIGWProxyWorkflowBuilder: b, handler: handler}
 }
@@ -99,4 +122,11 @@ type handlerData struct {
 	handler     interface{}
 	preActions  []Action
 	postActions []Action
+}
+
+type parameterizedHandlerData struct {
+	hData        *handlerData
+	pathRegExp   *regexp.Regexp
+	originalPath string
+	method       string
 }
